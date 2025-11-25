@@ -98,9 +98,9 @@ export default Header;
 // import { useSelector } from 'react-redux';
 // import { GoTriangleDown, GoTriangleUp  } from "react-icons/go";
 // import UserMenu from './UserMenu';
-// // import { DisplayPriceInRupees } from '../utils/DisplayPriceInRupees';
-// // import { useGlobalContext } from '../provider/GlobalProvider';
-// // import DisplayCartItem from './DisplayCartItem';
+// import { DisplayPriceInRupees } from "../utils/DisplayPricelnRupees"
+// import { useGlobalContext } from '../provider/GlobalProvider';
+// import DisplayCartItem from './DisplayCartItem';
 
 // const Header = () => {
 //     const [ isMobile ] = useMobile()
@@ -109,11 +109,11 @@ export default Header;
 //     const navigate = useNavigate()
 //     const user = useSelector((state)=> state?.user)
 //     const [openUserMenu,setOpenUserMenu] = useState(false)
-//     // const cartItem = useSelector(state => state.cartItem.cart)
+//     const cartItem = useSelector(state => state.cartItem.cart)
 //     // const [totalPrice,setTotalPrice] = useState(0)
 //     // const [totalQty,setTotalQty] = useState(0)
-//     // const { totalPrice, totalQty} = useGlobalContext()
-//     // const [openCartSection,setOpenCartSection] = useState(false)
+//     const { totalPrice, totalQty} = useGlobalContext()
+//     const [openCartSection,setOpenCartSection] = useState(false)
  
 //     const redirectToLoginPage = ()=>{
 //         navigate("/login")
@@ -147,8 +147,7 @@ export default Header;
 //     // },[cartItem])
 
 //   return (
-//     <header className='h-30 lg:h-20 sticky top-0 z-40 flex flex-col justify-center gap-1 bg-gradient-to-t from-purple-400 to-white shadow-md
-// '>
+//     <header className='h-24 lg:h-20 lg:shadow-md sticky top-0 z-40 flex flex-col justify-center gap-1 bg-white'>
 //         {
 //             !(isSearchPage && isMobile) && (
 //                 <div className='container mx-auto flex items-center px-2 justify-between'>
@@ -225,8 +224,8 @@ export default Header;
 //                                                 {
 //                                                     cartItem[0] ? (
 //                                                         <div>
-//                                                             {/* <p>{totalQty} Items</p> */}
-//                                                             {/* <p>{DisplayPriceInRupees(totalPrice)}</p> */}
+//                                                             <p>{totalQty} Items</p>
+//                                                             <p>{DisplayPriceInRupees(totalPrice)}</p>
 //                                                         </div>
 //                                                     ) : (
 //                                                         <p>My Cart</p>

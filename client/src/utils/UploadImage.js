@@ -13,7 +13,8 @@ const uploadImage = async(image)=>{
 
         return response
     } catch (error) {
-        return error
+        console.error('Image upload error:', error)
+        throw error
     }
 }
 

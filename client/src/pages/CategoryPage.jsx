@@ -5,7 +5,7 @@ import NoData from '../components/NoData'
 import Axios from '../utils/Axios'
 import SummaryApi from '../common/SummaryApi'
 import EditCategory from '../components/EditCategory'
-import CofirmBox from '../components/CofirmBox'
+import CofirmBox from '../components/ConfirmBox'
 import toast from 'react-hot-toast'
 import AxiosToastError from '../utils/AxiosToastError'
 import { useSelector } from 'react-redux'
@@ -23,6 +23,13 @@ const CategoryPage = () => {
     const [deleteCategory,setDeleteCategory] = useState({
         _id : ""
     })
+
+    const handleAddCategoryClick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        console.log("Opening category modal");
+        setOpenUploadCategory(true);
+    }
     // const allCategory = useSelector(state => state.product.allCategory)
 
 
@@ -51,7 +58,7 @@ const CategoryPage = () => {
     useEffect(()=>{
         fetchCategory()
     },[])
-
+    console.log("categoryData",categoryData);
     const handleDeleteCategory = async()=>{
         try {
             const response = await Axios({
@@ -73,9 +80,20 @@ const CategoryPage = () => {
 
   return (
     <section className=''>
-        <div className='p-2   bg-white shadow-md flex items-center justify-between'>
+        <div className='p-2 bg-white shadow-md flex items-center justify-between'>
             <h2 className='font-semibold'>Category</h2>
-            <button onClick={()=>setOpenUploadCategory(true)} className='text-sm border border-primary-200 hover:bg-primary-200 px-3 py-1 rounded'>Add Category</button>
+            <button 
+                onClick={handleAddCategoryClick}
+                type="button"
+                style={{
+                    pointerEvents: 'auto',
+                    display: 'inline-block',
+                    outline: 'none'
+                }}
+                className='text-sm border-2 border-primary-200 hover:bg-primary-200 hover:text-white px-4 py-2 rounded font-medium transition-all cursor-pointer bg-white text-primary-200 active:scale-95 lg:inline-block'
+            >
+                Add Category
+            </button>
         </div>
         {
             !categoryData[0] && !loading && (

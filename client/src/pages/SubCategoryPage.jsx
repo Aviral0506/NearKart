@@ -10,7 +10,7 @@ import { LuPencil } from "react-icons/lu";
 import { MdDelete  } from "react-icons/md";
 import { HiPencil } from "react-icons/hi";
 import EditSubCategory from '../components/EditSubCategory'
-import CofirmBox from '../components/CofirmBox'
+import CofirmBox from '../components/ConfirmBox'
 import toast from 'react-hot-toast'
 
 const SubCategoryPage = () => {

@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { pricewithDiscount } from "../utils/PriceWithDiscount";
 import { handleAddAddress } from "../store/addressSlice";
 import { setOrder } from "../store/orderSlice";
+import { setAllCategory } from "../store/productSlice";
 
 export const GlobalContext = createContext(null)
 
@@ -131,11 +132,29 @@ const GlobalProvider = ({children}) => {
       }
     }
 
+    const fetchCategory = async()=>{
+      try {
+        const response = await Axios({
+          ...SummaryApi.getCategory,
+        })
+        const { data : responseData } = response
+        console.log("Fetched categories:", responseData)
+
+        if(responseData.success){
+            console.log("Dispatching categories to Redux:", responseData.data)
+            dispatch(setAllCategory(responseData.data))
+        }
+      } catch (error) {
+        console.log("Error fetching categories:", error)
+      }
+    }
+
     useEffect(()=>{
       fetchCartItem()
       handleLogoutOut()
       fetchAddress()
       fetchOrder()
+      fetchCategory()
     },[user])
     
     return(

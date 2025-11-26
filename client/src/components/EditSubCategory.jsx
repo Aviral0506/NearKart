@@ -1,11 +1,15 @@
 import React, { useState } from 'react'
 import { IoClose } from "react-icons/io5";
 import uploadImage from '../utils/UploadImage';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import Axios from '../utils/Axios';
 import SummaryApi from '../common/SummaryApi';
 import toast from 'react-hot-toast';
 import AxiosToastError from '../utils/AxiosToastError';
+import { useEffect } from 'react';
+import { setAllCategory } from '../store/productSlice';
+
+const EMPTY_ARR = []
 
 const EditSubCategory = ({close,data,fetchData}) => {
     const [subCategoryData,setSubCategoryData] = useState({
@@ -14,7 +18,31 @@ const EditSubCategory = ({close,data,fetchData}) => {
         image : data.image,
         category : data.category || []
     })
-    const allCategory = useSelector(state => state.product.allCategory)
+    const dispatch = useDispatch()
+    const allCategory = useSelector(state => state?.product?.allCategory ?? EMPTY_ARR)
+
+    // Fetch categories when modal opens
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await Axios({
+                    ...SummaryApi.getCategory,
+                })
+                const { data : responseData } = response
+                console.log("Fetched categories in edit modal:", responseData)
+
+                if(responseData.success){
+                    console.log("Dispatching categories:", responseData.data)
+                    dispatch(setAllCategory(responseData.data))
+                }
+            } catch (error) {
+                console.log("Error fetching categories in edit modal:", error)
+                AxiosToastError(error)
+            }
+        }
+        
+        fetchCategories()
+    }, [dispatch])
 
 
     const handleChange = (e)=>{
@@ -85,6 +113,7 @@ const EditSubCategory = ({close,data,fetchData}) => {
 
   return (
     <section className='fixed top-0 right-0 bottom-0 left-0 bg-neutral-800 bg-opacity-70 z-50 flex items-center justify-center p-4'>
+        
         <div className='w-full max-w-5xl bg-white p-4 rounded'>
             <div className='flex items-center justify-between gap-3'>
                 <h1 className='font-semibold'>Edit Sub Category</h1>
@@ -141,12 +170,12 @@ const EditSubCategory = ({close,data,fetchData}) => {
                                 {
                                     subCategoryData.category.map((cat,index)=>{
                                         return(
-                                            <p key={cat._id+"selectedValue"} className='bg-white shadow-md px-1 m-1 flex items-center gap-2'>
+                                            <div key={cat._id+"selectedValue"} className='bg-white shadow-md px-1 m-1 flex items-center gap-2'>
                                                 {cat.name}
                                                 <div className='cursor-pointer hover:text-red-600' onClick={()=>handleRemoveCategorySelected(cat._id)}>
                                                     <IoClose size={20}/>
                                                 </div>
-                                            </p>
+                                            </div>
                                         )
                                     })
                                 }

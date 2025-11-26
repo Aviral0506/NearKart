@@ -13,6 +13,8 @@ import AxiosToastError from '../utils/AxiosToastError';
 import successAlert from '../utils/SuccessAlert';
 import { useEffect } from 'react';
 
+const EMPTY_ARR = []
+
 const UploadProduct = () => {
   const [data,setData] = useState({
       name : "",
@@ -28,10 +30,10 @@ const UploadProduct = () => {
   })
   const [imageLoading,setImageLoading] = useState(false)
   const [ViewImageURL,setViewImageURL] = useState("")
-  const allCategory = useSelector(state => state.product.allCategory)
+  const allCategory = useSelector(state => state?.product?.allCategory ?? EMPTY_ARR)
   const [selectCategory,setSelectCategory] = useState("")
   const [selectSubCategory,setSelectSubCategory] = useState("")
-  const allSubCategory = useSelector(state => state.product.allSubCategory)
+  const allSubCategory = useSelector(state => state?.product?.allSubCategory ?? EMPTY_ARR)
 
   const [openAddField,setOpenAddField] = useState(false)
   const [fieldName,setFieldName] = useState("")

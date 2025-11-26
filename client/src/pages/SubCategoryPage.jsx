@@ -129,11 +129,35 @@ const SubCategoryPage = () => {
         AxiosToastError(error)
       }
   }
+
+  const handleAddSubCategoryClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    console.log("Opening add sub category modal");
+    setOpenAddSubCategory(true);
+  }
+
   return (
     <section className=''>
-        <div className='p-2   bg-white shadow-md flex items-center justify-between'>
+        <div className='p-2 bg-white shadow-md flex items-center justify-between relative z-30'>
             <h2 className='font-semibold'>Sub Category</h2>
-            <button onClick={()=>setOpenAddSubCategory(true)} className='text-sm border border-primary-200 hover:bg-primary-200 px-3 py-1 rounded'>Add Sub Category</button>
+            <div 
+                onClick={handleAddSubCategoryClick}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        handleAddSubCategoryClick(e);
+                    }
+                }}
+                role="button"
+                tabIndex={0}
+                style={{
+                    pointerEvents: 'auto',
+                    cursor: 'pointer'
+                }}
+                className='text-sm border-2 border-primary-200 hover:bg-primary-200 hover:text-white px-4 py-2 rounded font-medium transition-all bg-white text-primary-200 active:scale-95 select-none'
+            >
+                Add Sub Category
+            </div>
         </div>
 
         <div className='overflow-auto w-full max-w-[95vw]'>

@@ -1,12 +1,15 @@
 import React, { useState } from 'react'
 import { IoClose } from "react-icons/io5";
 import uploadImage from '../utils/UploadImage';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import Axios from '../utils/Axios';
 import SummaryApi from '../common/SummaryApi';
 import toast from 'react-hot-toast';
 import AxiosToastError from '../utils/AxiosToastError';
 import { useEffect } from 'react';
+import { setAllCategory } from '../store/productSlice';
+
+const EMPTY_ARR = []
 
 const UploadSubCategoryModel = ({close, fetchData}) => {
     const [subCategoryData,setSubCategoryData] = useState({
@@ -14,7 +17,43 @@ const UploadSubCategoryModel = ({close, fetchData}) => {
         image : "",
         category : []
     })
-    const allCategory = useSelector(state => state.product.allCategory)
+    const dispatch = useDispatch()
+    const allCategory = useSelector(state => {
+        console.log("Selector called - Full Redux state:", state)
+        console.log("Selector called - product slice:", state?.product)
+        console.log("Selector called - allCategory:", state?.product?.allCategory)
+        return state?.product?.allCategory ?? EMPTY_ARR
+    })
+
+    // Fetch categories when modal opens
+    useEffect(() => {
+        console.log("=== Modal opened, fetching categories ===")
+        const fetchCategories = async () => {
+            try {
+                const response = await Axios({
+                    ...SummaryApi.getCategory,
+                })
+                const { data : responseData } = response
+                console.log("Fetched categories in modal:", responseData)
+
+                if(responseData.success){
+                    console.log("Dispatching categories:", responseData.data)
+                    dispatch(setAllCategory(responseData.data))
+                    console.log("After dispatch - checking Redux store...")
+                }
+            } catch (error) {
+                console.log("Error fetching categories in modal:", error)
+                AxiosToastError(error)
+            }
+        }
+        
+        fetchCategories()
+    }, [dispatch])
+
+    // Debug effect to log when allCategory changes
+    useEffect(() => {
+        console.log("=== allCategory in component changed ===", allCategory)
+    }, [allCategory])
 
     const handleChange = (e)=>{
         const { name, value} = e.target 
@@ -140,12 +179,12 @@ const UploadSubCategoryModel = ({close, fetchData}) => {
                                 {
                                     subCategoryData.category.map((cat,index)=>{
                                         return(
-                                            <p key={cat._id+"selectedValue"} className='bg-white shadow-md px-1 m-1 flex items-center gap-2'>
+                                            <div key={cat._id+"selectedValue"} className='bg-white shadow-md px-1 m-1 flex items-center gap-2'>
                                                 {cat.name}
                                                 <div className='cursor-pointer hover:text-red-600' onClick={()=>handleRemoveCategorySelected(cat._id)}>
                                                     <IoClose size={20}/>
                                                 </div>
-                                            </p>
+                                            </div>
                                         )
                                     })
                                 }
@@ -157,6 +196,7 @@ const UploadSubCategoryModel = ({close, fetchData}) => {
                                 onChange={(e)=>{
                                     const value = e.target.value
                                     const categoryDetails = allCategory.find(el => el._id == value)
+                                    console.log("Selected value:", value, "Found category:", categoryDetails)
                                     
                                     setSubCategoryData((preve)=>{
                                         return{
@@ -168,11 +208,15 @@ const UploadSubCategoryModel = ({close, fetchData}) => {
                             >
                                 <option value={""}>Select Category</option>
                                 {
-                                    allCategory.map((category,index)=>{
-                                        return(
-                                            <option value={category?._id} key={category._id+"subcategory"}>{category?.name}</option>
-                                        )
-                                    })
+                                    (() => {
+                                        console.log("=== Rendering options - allCategory:", allCategory)
+                                        return allCategory.map((category,index)=>{
+                                            console.log("Rendering option:", category)
+                                            return(
+                                                <option value={category?._id} key={category._id+"subcategory"}>{category?.name}</option>
+                                            )
+                                        })
+                                    })()
                                 }
                             </select>
                         </div>

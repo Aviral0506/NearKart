@@ -15,7 +15,7 @@ import Address from "../pages/Address.jsx";
 import CategoryPage from "../pages/CategoryPage";
 import SubCategoryPage from "../pages/SubCategoryPage";
 import UploadProduct from "../pages/UploadProduct";
-// import ProductAdmin from "../pages/ProductAdmin";
+import ProductAdmin from "../pages/ProductAdmin";
 const router = createBrowserRouter([
     {
         path : "/",
@@ -81,10 +81,10 @@ const router = createBrowserRouter([
                         path : 'upload-product',
                         element : <UploadProduct/>
                     },
-                    // {
-                    //     path : 'product',
-                    //     element : <ProductAdmin/>
-                    // }
+                    {
+                        path : 'product',
+                        element : <ProductAdmin/>
+                    }
                 ]
             },
         ]

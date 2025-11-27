@@ -4,7 +4,7 @@ import uploadImage from '../utils/UploadImage';
 import Loading from '../components/Loading';
 import ViewImage from '../components/ViewImage';
 import { MdDelete } from "react-icons/md";
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { IoClose } from "react-icons/io5";
 import AddFieldComponent from '../components/AddFieldComponent';
 import Axios from '../utils/Axios';
@@ -12,10 +12,12 @@ import SummaryApi from '../common/SummaryApi';
 import AxiosToastError from '../utils/AxiosToastError';
 import successAlert from '../utils/SuccessAlert';
 import { useEffect } from 'react';
+import { setAllCategory, setAllSubCategory } from '../store/productSlice';
 
 const EMPTY_ARR = []
 
 const UploadProduct = () => {
+  const dispatch = useDispatch()
   const [data,setData] = useState({
       name : "",
       image : [],
@@ -37,6 +39,30 @@ const UploadProduct = () => {
 
   const [openAddField,setOpenAddField] = useState(false)
   const [fieldName,setFieldName] = useState("")
+
+  // Fetch categories and subcategories on component mount
+  useEffect(() => {
+    const fetchCategoriesAndSubCategories = async () => {
+      try {
+        const [categoryRes, subCategoryRes] = await Promise.all([
+          Axios({ ...SummaryApi.getCategory }),
+          Axios({ ...SummaryApi.getSubCategory })
+        ])
+
+        if (categoryRes.data?.success) {
+          dispatch(setAllCategory(categoryRes.data.data))
+        }
+
+        if (subCategoryRes.data?.success) {
+          dispatch(setAllSubCategory(subCategoryRes.data.data))
+        }
+      } catch (error) {
+        console.log("Error fetching categories/subcategories:", error)
+      }
+    }
+
+    fetchCategoriesAndSubCategories()
+  }, [dispatch])
 
 
   const handleChange = (e)=>{

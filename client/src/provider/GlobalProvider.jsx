@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 import { pricewithDiscount } from "../utils/PriceWithDiscount";
 import { handleAddAddress } from "../store/addressSlice";
 import { setOrder } from "../store/orderSlice";
-import { setAllCategory } from "../store/productSlice";
+import { setAllCategory, setLoadingCategory } from "../store/productSlice";
 
 export const GlobalContext = createContext(null)
 
@@ -134,6 +134,7 @@ const GlobalProvider = ({children}) => {
 
     const fetchCategory = async()=>{
       try {
+        dispatch(setLoadingCategory(true))
         const response = await Axios({
           ...SummaryApi.getCategory,
         })
@@ -146,6 +147,8 @@ const GlobalProvider = ({children}) => {
         }
       } catch (error) {
         console.log("Error fetching categories:", error)
+      } finally {
+        dispatch(setLoadingCategory(false))
       }
     }
 

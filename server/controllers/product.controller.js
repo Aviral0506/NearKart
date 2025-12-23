@@ -1,4 +1,5 @@
 import ProductModel from "../models/product.model.js";
+import mongoose from "mongoose";
 
 export const createProductController = async(request,response)=>{
     try {
@@ -129,7 +130,7 @@ export const getProductByCategory = async(request,response)=>{
 
 export const getProductByCategoryAndSubCategory  = async(request,response)=>{
     try {
-        const { categoryId,subCategoryId,page,limit } = request.body
+        const { categoryId, subCategoryId, page = 1, limit = 10 } = request.body
 
         if(!categoryId || !subCategoryId){
             return response.status(400).json({
@@ -139,22 +140,27 @@ export const getProductByCategoryAndSubCategory  = async(request,response)=>{
             })
         }
 
-        if(!page){
-            page = 1
-        }
+        // Convert string IDs to MongoDB ObjectIds if they're strings
+        const catIds = Array.isArray(categoryId) ? categoryId.map(id => 
+            mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id
+        ) : [categoryId].map(id => 
+            mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id
+        )
 
-        if(!limit){
-            limit = 10
-        }
+        const subCatIds = Array.isArray(subCategoryId) ? subCategoryId.map(id => 
+            mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id
+        ) : [subCategoryId].map(id => 
+            mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id
+        )
 
         const query = {
-            category : { $in :categoryId  },
-            subCategory : { $in : subCategoryId }
+            category : { $in : catIds },
+            subCategory : { $in : subCatIds }
         }
 
         const skip = (page - 1) * limit
 
-        const [data,dataCount] = await Promise.all([
+        const [data, dataCount] = await Promise.all([
             ProductModel.find(query).sort({createdAt : -1 }).skip(skip).limit(limit),
             ProductModel.countDocuments(query)
         ])

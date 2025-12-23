@@ -16,6 +16,8 @@ import CategoryPage from "../pages/CategoryPage";
 import SubCategoryPage from "../pages/SubCategoryPage";
 import UploadProduct from "../pages/UploadProduct";
 import ProductAdmin from "../pages/ProductAdmin";
+import ProductListPage from "../pages/ProductListPage.jsx"
+import ProductDisplayPage from "../pages/ProductDisplayPage.jsx";
 const router = createBrowserRouter([
     {
         path : "/",
@@ -86,6 +88,18 @@ const router = createBrowserRouter([
                         element : <ProductAdmin/>
                     }
                 ]
+            },
+            {
+                path: ":category/:subCategory",
+                element: <ProductListPage />
+            },
+            {
+                path: ":category",
+                element: <ProductListPage />
+            },
+            {
+                path : "product/:product",
+                element : <ProductDisplayPage/>
             },
         ]
     }

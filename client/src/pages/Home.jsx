@@ -18,16 +18,25 @@ const Home = () => {
   const handleRedirectProductListpage = (id,cat)=>{
       console.log(id,cat)
       const subcategory = subCategoryData.find(sub =>{
-        const filterData = sub.category.some(c => {
-          return c._id == id
+        const filterData = sub?.category?.some(c => {
+          return c?._id == id
         })
 
         return filterData ? true : null
       })
+
+      // If no matching subcategory found, navigate to category page only
+      if(!subcategory){
+        const url = `/${valideURLConvert(cat)}-${id}`
+        navigate(url)
+        console.log('Redirect (no subcategory):', url)
+        return
+      }
+
       const url = `/${valideURLConvert(cat)}-${id}/${valideURLConvert(subcategory.name)}-${subcategory._id}`
 
       navigate(url)
-      console.log(url)
+      console.log('Redirect:', url)
   }
 
 

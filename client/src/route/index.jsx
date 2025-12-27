@@ -18,6 +18,11 @@ import UploadProduct from "../pages/UploadProduct";
 import ProductAdmin from "../pages/ProductAdmin";
 import ProductListPage from "../pages/ProductListPage.jsx"
 import ProductDisplayPage from "../pages/ProductDisplayPage.jsx";
+import Cart from "../pages/Cart.jsx";
+import NotFound from "../pages/NotFound.jsx";
+import CheckoutPage from "../pages/CheckoutPage.jsx";
+import Success from "../pages/Success.jsx";
+import Cancel from "../pages/Cancel.jsx";
 const router = createBrowserRouter([
     {
         path : "/",
@@ -90,6 +95,14 @@ const router = createBrowserRouter([
                 ]
             },
             {
+                path : "product/:product",
+                element : <ProductDisplayPage/>
+            },
+            {
+                path : 'cart',
+                element : <Cart/>
+            },
+            {
                 path: ":category/:subCategory",
                 element: <ProductListPage />
             },
@@ -98,9 +111,21 @@ const router = createBrowserRouter([
                 element: <ProductListPage />
             },
             {
-                path : "product/:product",
-                element : <ProductDisplayPage/>
+                path: "*",
+                element: <NotFound />
             },
+            {
+                path: "checkout",
+                element : <CheckoutPage />
+            },
+            {
+                path: "success",
+                element : <Success />
+            },
+            {
+                path : "cancel",
+                element : <Cancel />
+            }
         ]
     }
 ])

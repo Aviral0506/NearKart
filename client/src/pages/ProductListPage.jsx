@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react'
 import Axios from '../utils/Axios'
 import SummaryApi from '../common/SummaryApi'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import AxiosToastError from '../utils/AxiosToastError'
 import Loading from '../components/Loading'
 import CardProduct from '../components/CardProduct'
 import { useSelector } from 'react-redux'
 import { valideURLConvert } from '../utils/valideURLConvert'
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
+import NotFound from './NotFound';
 
 const ProductListPage = () => {
   const [data, setData] = useState([])
@@ -15,7 +16,9 @@ const ProductListPage = () => {
   const [loading, setLoading] = useState(false)
   const [totalPage, setTotalPage] = useState(1)
   const [subCategoriesLocal, setSubCategoriesLocal] = useState([])
+  const [invalidCategory, setInvalidCategory] = useState(false)
   const params = useParams()
+  const navigate = useNavigate()
   const AllSubCategory = useSelector(state => state.product.allSubCategory)
   const allCategory = useSelector(state => state.product.allCategory)
   const [DisplaySubCatory, setDisplaySubCategory] = useState([])
@@ -27,6 +30,16 @@ const ProductListPage = () => {
 
   const categoryId = params?.category?.split("-")?.slice(-1)[0] || ""
   const subCategoryId = params?.subCategory?.split("-")?.slice(-1)[0] || ""
+
+  // Validate if category exists in Redux
+  useEffect(() => {
+    if (categoryId && allCategory && allCategory.length > 0) {
+      const categoryExists = allCategory.some(cat => String(cat._id) === String(categoryId))
+      if (!categoryExists) {
+        setInvalidCategory(true)
+      }
+    }
+  }, [categoryId, allCategory])
 
   // Fetch subcategories from API if not in Redux
   const fetchSubCategoriesFromAPI = async () => {
@@ -170,6 +183,12 @@ const ProductListPage = () => {
   console.log('categoryName:', categoryName)
   console.log('DisplaySubCatory length:', DisplaySubCatory.length)
   console.log('data length:', data.length)
+
+  // If category is invalid, show NotFound page
+  if (invalidCategory) {
+    return <NotFound />
+  }
+
   return (
     <section className='relative'>
       <div className='container mx-auto grid grid-cols-[80px,1fr] md:grid-cols-[160px,1fr] lg:grid-cols-[250px,1fr] mt-0'>

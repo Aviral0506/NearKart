@@ -24,7 +24,7 @@ const AddToCartButton = ({ data }) => {
             setLoading(true)
 
             const response = await Axios({
-                ...SummaryApi.addTocart,
+                ...SummaryApi.addToCart,
                 data: {
                     productId: data?._id
                 }
@@ -33,12 +33,13 @@ const AddToCartButton = ({ data }) => {
             const { data: responseData } = response
 
             if (responseData.success) {
-                toast.success(responseData.message)
+                toast.success("✓ " + (responseData.message || "Product added to cart"))
                 if (fetchCartItem) {
                     fetchCartItem()
                 }
             }
         } catch (error) {
+            console.error("Add to cart error:", error)
             AxiosToastError(error)
         } finally {
             setLoading(false)
@@ -64,7 +65,7 @@ const AddToCartButton = ({ data }) => {
        const response = await  updateCartItem(cartItemDetails?._id,qty+1)
         
        if(response.success){
-        toast.success("Item added")
+        toast.success("✓ Item quantity increased")
        }
     }
 
@@ -72,12 +73,15 @@ const AddToCartButton = ({ data }) => {
         e.preventDefault()
         e.stopPropagation()
         if(qty === 1){
-            deleteCartItem(cartItemDetails?._id)
+            const response = await deleteCartItem(cartItemDetails?._id)
+            if(response?.success){
+                toast.success("✓ Item removed from cart")
+            }
         }else{
             const response = await updateCartItem(cartItemDetails?._id,qty-1)
 
             if(response.success){
-                toast.success("Item remove")
+                toast.success("✓ Item quantity decreased")
             }
         }
     }

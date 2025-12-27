@@ -150,6 +150,11 @@ const SummaryApi = {
         url : "/api/order/checkout",
         method : 'post'
     },
+    // RAZORPAY: Verify payment signature
+    verifyPayment : {
+        url : "/api/order/verify-payment",
+        method : 'post'
+    },
     getOrderItems : {
         url : '/api/order/order-list',
         method : 'get'

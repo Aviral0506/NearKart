@@ -1,8 +1,10 @@
-import Stripe from "../config/stripe.js";
+// STRIPE REMOVED - Replaced with Razorpay payment gateway
+import razorpayInstance from "../config/razorpay.js";
 import CartProductModel from "../models/cartproduct.model.js";
 import OrderModel from "../models/order.model.js";
 import UserModel from "../models/user.model.js";
 import mongoose from "mongoose";
+import crypto from "crypto";
 
  export async function CashOnDeliveryOrderController(request,response){
     try {
@@ -54,136 +56,158 @@ export const pricewithDiscount = (price,dis = 1)=>{
     return actualPrice
 }
 
-export async function paymentController(request,response){
-    try {
-        const userId = request.userId // auth middleware 
-        const { list_items, totalAmt, addressId,subTotalAmt } = request.body 
+export async function paymentController(request, response) {
+  try {
+    const userId = request.userId; // auth middleware
+    const { list_items, totalAmt, addressId, subTotalAmt } = request.body;
 
-        const user = await UserModel.findById(userId)
+    const user = await UserModel.findById(userId);
 
-        const line_items  = list_items.map(item =>{
-            return{
-               price_data : {
-                    currency : 'inr',
-                    product_data : {
-                        name : item.productId.name,
-                        images : item.productId.image,
-                        metadata : {
-                            productId : item.productId._id
-                        }
-                    },
-                    unit_amount : pricewithDiscount(item.productId.price,item.productId.discount) * 100   
-               },
-               adjustable_quantity : {
-                    enabled : true,
-                    minimum : 1
-               },
-               quantity : item.quantity 
-            }
-        })
+    // RAZORPAY: Create order for payment
+    // Razorpay amount is in the smallest currency unit (paise for INR)
+    const razorpayOrder = await razorpayInstance.orders.create({
+      amount: Math.round(totalAmt * 100), // Convert to paise
+      currency: "INR",
+      receipt: `ORD-${new mongoose.Types.ObjectId()}`,
+      notes: {
+        userId: userId,
+        addressId: addressId,
+        cartItems: JSON.stringify(list_items.map(item => ({
+          productId: item.productId._id,
+          name: item.productId.name,
+          quantity: item.quantity,
+          price: pricewithDiscount(item.productId.price, item.productId.discount)
+        })))
+      }
+    });
 
-        const params = {
-            submit_type : 'pay',
-            mode : 'payment',
-            payment_method_types : ['card'],
-            customer_email : user.email,
-            metadata : {
-                userId : userId,
-                addressId : addressId
-            },
-            line_items : line_items,
-            success_url : `${process.env.FRONTEND_URL}/success`,
-            cancel_url : `${process.env.FRONTEND_URL}/cancel`
-        }
+    // Return order details to frontend for payment
+    return response.status(200).json({
+      success: true,
+      order_id: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      key_id: process.env.RAZORPAY_API_KEY,
+      user_email: user.email,
+      user_id: userId
+    });
 
-        const session = await Stripe.checkout.sessions.create(params)
-
-        return response.status(200).json(session)
-
-    } catch (error) {
-        return response.status(500).json({
-            message : error.message || error,
-            error : true,
-            success : false
-        })
-    }
-}
-
-
-const getOrderProductItems = async({
-    lineItems,
-    userId,
-    addressId,
-    paymentId,
-    payment_status,
- })=>{
-    const productList = []
-
-    if(lineItems?.data?.length){
-        for(const item of lineItems.data){
-            const product = await Stripe.products.retrieve(item.price.product)
-
-            const paylod = {
-                userId : userId,
-                orderId : `ORD-${new mongoose.Types.ObjectId()}`,
-                productId : product.metadata.productId, 
-                product_details : {
-                    name : product.name,
-                    image : product.images
-                } ,
-                paymentId : paymentId,
-                payment_status : payment_status,
-                delivery_address : addressId,
-                subTotalAmt  : Number(item.amount_total / 100),
-                totalAmt  :  Number(item.amount_total / 100),
-            }
-
-            productList.push(paylod)
-        }
-    }
-
-    return productList
-}
-
-//http://localhost:8080/api/order/webhook
-export async function webhookStripe(request,response){
-    const event = request.body;
-    const endPointSecret = process.env.STRIPE_ENPOINT_WEBHOOK_SECRET_KEY
-
-    console.log("event",event)
-
-    // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object;
-      const lineItems = await Stripe.checkout.sessions.listLineItems(session.id)
-      const userId = session.metadata.userId
-      const orderProduct = await getOrderProductItems(
-        {
-            lineItems : lineItems,
-            userId : userId,
-            addressId : session.metadata.addressId,
-            paymentId  : session.payment_intent,
-            payment_status : session.payment_status,
-        })
-    
-      const order = await OrderModel.insertMany(orderProduct)
-
-        console.log(order)
-        if(Boolean(order[0])){
-            const removeCartItems = await  UserModel.findByIdAndUpdate(userId,{
-                shopping_cart : []
-            })
-            const removeCartProductDB = await CartProductModel.deleteMany({ userId : userId})
-        }
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+  } catch (error) {
+    return response.status(500).json({
+      message: error.message || error,
+      error: true,
+      success: false
+    });
   }
-
-  // Return a response to acknowledge receipt of the event
-  response.json({received: true});
 }
+
+
+
+// RAZORPAY: Verify payment signature and create order
+export async function verifyPaymentController(request, response) {
+  try {
+    const userId = request.userId; // Get from auth middleware
+    const { orderId, paymentId, signature, addressId, cartItems } = request.body;
+
+    console.log('[Verify Payment] Received request:', { 
+      userId, 
+      orderId, 
+      paymentId, 
+      signature: signature?.substring(0, 10) + '...',
+      cartItemsCount: cartItems?.length || 0
+    });
+
+    // Verify Razorpay signature for secure payment verification
+    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_API_SECRET);
+    hmac.update(orderId + "|" + paymentId);
+    const generated_signature = hmac.digest('hex');
+
+    console.log('[Verify Payment] Signature comparison:');
+    console.log('  Generated:', generated_signature);
+    console.log('  Received:', signature);
+    console.log('  Match:', generated_signature === signature);
+
+    if (generated_signature !== signature) {
+      console.log('[Verify Payment] ❌ Signature verification failed');
+      return response.status(400).json({
+        message: "Payment verification failed - Signature mismatch",
+        error: true,
+        success: false
+      });
+    }
+
+    console.log('[Verify Payment] ✅ Signature verified successfully');
+
+    // Payment verified - Create order in database
+    const payload = cartItems.map(el => {
+      return {
+        userId: userId,
+        orderId: `ORD-${new mongoose.Types.ObjectId()}`,
+        productId: el.productId._id,
+        product_details: {
+          name: el.productId.name,
+          image: el.productId.image
+        },
+        paymentId: paymentId,
+        payment_status: "PAID",
+        delivery_address: addressId,
+        subTotalAmt: el.subTotalAmt,
+        totalAmt: el.totalAmt,
+      };
+    });
+
+    console.log('[Verify Payment] Creating orders:', payload.length);
+    const generatedOrder = await OrderModel.insertMany(payload);
+    console.log('[Verify Payment] ✅ Orders created');
+
+    // Remove items from cart after successful payment
+    console.log('[Verify Payment] Clearing cart for user:', userId);
+    await CartProductModel.deleteMany({ userId: userId });
+    await UserModel.updateOne({ _id: userId }, { shopping_cart: [] });
+    console.log('[Verify Payment] ✅ Cart cleared');
+
+    return response.json({
+      message: "Order successfully created",
+      error: false,
+      success: true,
+      data: generatedOrder
+    });
+
+  } catch (error) {
+    console.error('[Verify Payment] ❌ Error:', error.message);
+    console.error('[Verify Payment] Stack:', error.stack);
+    return response.status(500).json({
+      message: error.message || error,
+      error: true,
+      success: false
+    });
+  }
+}
+
+// STRIPE REMOVED - Replaced with Razorpay webhook handler
+// RAZORPAY: Handle Razorpay webhook events (optional - mainly for async payment status updates)
+export async function webhookRazorpay(request, response) {
+  try {
+    const event = request.body;
+    
+    // For Razorpay, signature verification is typically done on frontend
+    // This webhook is optional and can be used for async notifications
+    // For this implementation, payment verification is done in verifyPaymentController
+    
+    console.log("Razorpay webhook event:", event.event);
+    
+    response.json({ received: true });
+
+  } catch (error) {
+    console.error("Webhook error:", error);
+    response.status(500).json({
+      message: error.message || error,
+      error: true,
+      success: false
+    });
+  }
+}
+
 
 
 export async function getOrderDetailsController(request,response){

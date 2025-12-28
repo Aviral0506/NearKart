@@ -61,6 +61,7 @@ const CheckoutPage = () => {
   const cartItemsList = useSelector(state => state.cartItem?.cart) || []
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
+  const [isProcessingCOD, setIsProcessingCOD] = useState(false)
 
   useEffect(() => {
     // Fetch addresses when component mounts
@@ -108,37 +109,118 @@ const CheckoutPage = () => {
   }
 
   const handleCashOnDelivery = async() => {
+      // Prevent double submission
+      if (isProcessingCOD) {
+        console.warn('[CashOnDelivery] Request already in progress, ignoring duplicate submission')
+        return
+      }
+
       try {
+          setIsProcessingCOD(true)
+          console.log('[CashOnDelivery] ========== START ==========')
+          
           if (!isAddressValid()) {
+            console.warn('[CashOnDelivery] Address validation failed')
+            setIsProcessingCOD(false)
             return
           }
+
+          // Validate cart has items
+          if (!cartItemsList || cartItemsList.length === 0) {
+            console.warn('[CashOnDelivery] Cart is empty')
+            toast.error("Cart is empty")
+            setIsProcessingCOD(false)
+            return
+          }
+
+          console.log('[CashOnDelivery] Cart validation passed')
+          console.log('[CashOnDelivery] Items in cart:', cartItemsList.length)
+
+          // Generate unique orderId on FRONTEND to prevent duplicates
+          const uniqueOrderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          console.log('[CashOnDelivery] Generated unique orderId:', uniqueOrderId)
+
+          // Add totalAmt to each item
+          const list_items = cartItemsList.map(item => ({
+            ...item,
+            totalAmt: item.quantity ? item.productId.price * item.quantity : item.productId.price
+          }))
+
+          console.log('[CashOnDelivery] Sending items:', list_items.length)
+          console.log('[CashOnDelivery] Selected address ID:', addressList[selectAddress]?._id)
+          console.log('[CashOnDelivery] Total amount:', totalPrice)
 
           const response = await Axios({
             ...SummaryApi.CashOnDeliveryOrder,
             data : {
-              list_items : cartItemsList,
+              list_items : list_items,
               addressId : addressList[selectAddress]?._id,
               subTotalAmt : totalPrice,
               totalAmt :  totalPrice,
+              orderId : uniqueOrderId
             }
           })
 
+          console.log('[CashOnDelivery] API Response received')
+          console.log('[CashOnDelivery] Response status:', response.status)
+          console.log('[CashOnDelivery] Response data:', response.data)
+
           const { data : responseData } = response
 
-          if(responseData.success){
-              toast.success(responseData.message)
+          if(responseData && responseData.success){
+              console.log('[CashOnDelivery] ✅ Order placed successfully')
+              toast.success(responseData.message || "Order placed successfully")
+              
+              console.log('[CashOnDelivery] Clearing cart...')
+              // Clear cart - don't await, just trigger it
               if(fetchCartItem){
-                fetchCartItem()
+                fetchCartItem().catch(err => {
+                  console.error('[CashOnDelivery] Cart clearing failed, but continuing with navigation:', err)
+                })
               }
-              navigate('/success',{
-                state : {
-                  text : "Order"
-                }
-              })
+              
+              console.log('[CashOnDelivery] About to navigate to /success')
+              
+              // Navigate immediately without delay
+              try {
+                console.log('[CashOnDelivery] Navigate function:', typeof navigate)
+                navigate('/success', {
+                  state: {
+                    text: "Order"
+                  }
+                })
+                console.log('[CashOnDelivery] ✅ Navigate called successfully')
+              } catch (navErr) {
+                console.error('[CashOnDelivery] Error calling navigate:', navErr)
+              }
+              
+              setIsProcessingCOD(false)
+          } else {
+              console.error('[CashOnDelivery] ❌ Order failed - success is false')
+              console.error('[CashOnDelivery] Response:', responseData)
+              toast.error(responseData?.message || "Failed to place order")
+              setIsProcessingCOD(false)
           }
 
       } catch (error) {
+        console.error('[CashOnDelivery] ========== ERROR ==========')
+        console.error('[CashOnDelivery] Error type:', error.constructor.name)
+        console.error('[CashOnDelivery] Error message:', error.message)
+        console.error('[CashOnDelivery] Error status:', error.response?.status)
+        console.error('[CashOnDelivery] Error data:', error.response?.data)
+        console.error('[CashOnDelivery] Full error:', error)
+        
+        // Check for duplicate key error
+        if (error.response?.data?.message?.includes('E11000') || error.response?.data?.message?.includes('duplicate')) {
+          console.error('[CashOnDelivery] ⚠️  Duplicate order detected - trying again with new orderId')
+          toast.error("Duplicate order detected. Please try again.")
+          setIsProcessingCOD(false)
+          // User can try again immediately since this is a new unique orderId
+          return
+        }
+        
         AxiosToastError(error)
+        setIsProcessingCOD(false)
       }
   }
 
@@ -152,11 +234,17 @@ const CheckoutPage = () => {
       setIsLoading(true)
       console.log('Initiating Razorpay payment...')
 
+      // Add totalAmt to each item
+      const list_items = cartItemsList.map(item => ({
+        ...item,
+        totalAmt: item.quantity ? item.productId.price * item.quantity : item.productId.price
+      }))
+
       // Step 1: Create Razorpay order from backend
       const orderResponse = await Axios({
         ...SummaryApi.payment_url,
         data: {
-          list_items: cartItemsList,
+          list_items: list_items,
           addressId: addressList[selectAddress]?._id,
           subTotalAmt: totalPrice,
           totalAmt: totalPrice,
@@ -195,7 +283,8 @@ const CheckoutPage = () => {
         order_id: order_id,
         handler: async (response) => {
           try {
-            console.log('Payment response received:', response)
+            console.log('[Razorpay] ========== PAYMENT HANDLER ==========')
+            console.log('[Razorpay] Payment response received:', response)
             
             // Step 5: Verify payment on backend
             const verifyResponse = await Axios({
@@ -210,44 +299,50 @@ const CheckoutPage = () => {
               }
             })
 
-            console.log('Verify response:', verifyResponse.data)
+            console.log('[Razorpay] Verify response received:', verifyResponse.data)
 
-            if (verifyResponse.data.success) {
-              console.log('Payment verified successfully')
+            if (verifyResponse.data && verifyResponse.data.success) {
+              console.log('[Razorpay] ✅ Payment verified successfully')
               toast.success('Payment successful! Order placed.')
               
               // RAZORPAY: Clear cart after successful payment
               try {
                 if (fetchCartItem) {
-                  console.log('Clearing cart from frontend...')
+                  console.log('[Razorpay] Clearing cart from frontend...')
                   await fetchCartItem()
-                  console.log('Cart cleared successfully')
+                  console.log('[Razorpay] Cart cleared successfully')
                 }
               } catch (cartError) {
-                console.error('Error clearing cart:', cartError)
+                console.error('[Razorpay] Error clearing cart:', cartError)
                 // Don't stop navigation even if cart clear fails
               }
               
               // RAZORPAY: Add small delay to ensure state updates before navigation
-              console.log('Waiting before navigation...')
+              console.log('[Razorpay] Waiting 500ms before navigation...')
               setTimeout(() => {
-                console.log('Navigating to success page...')
+                console.log('[Razorpay] Executing navigation to /success...')
                 setIsLoading(false)
                 navigate('/success', {
                   state: {
                     text: 'Order'
                   }
                 })
+                console.log('[Razorpay] Navigation executed')
               }, 500)
             } else {
               setIsLoading(false)
-              console.error('Payment verification returned false:', verifyResponse.data)
-              toast.error(verifyResponse.data.message || 'Payment verification failed')
+              console.error('[Razorpay] ❌ Payment verification returned false')
+              console.error('[Razorpay] Response data:', verifyResponse.data)
+              toast.error(verifyResponse.data?.message || 'Payment verification failed')
             }
           } catch (error) {
             setIsLoading(false)
-            console.error('Payment verification error:', error)
-            console.error('Error details:', error.response?.data || error.message)
+            console.error('[Razorpay] ========== VERIFICATION ERROR ==========')
+            console.error('[Razorpay] Error type:', error.constructor.name)
+            console.error('[Razorpay] Error message:', error.message)
+            console.error('[Razorpay] Error status:', error.response?.status)
+            console.error('[Razorpay] Error response data:', error.response?.data)
+            console.error('[Razorpay] Full error:', error)
             AxiosToastError(error)
             toast.error('Payment verification failed. Please contact support.')
           }
@@ -363,10 +458,10 @@ const CheckoutPage = () => {
             </button>
 
             <button 
-              disabled={!addressList[selectAddress]?._id}
+              disabled={!addressList[selectAddress]?._id || isProcessingCOD}
               className='py-2 px-4 border-2 border-green-600 font-semibold text-green-600 hover:bg-green-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400' 
               onClick={handleCashOnDelivery}>
-              Cash on Delivery
+              {isProcessingCOD ? 'Processing Order...' : 'Cash on Delivery'}
             </button>
           </div>
 

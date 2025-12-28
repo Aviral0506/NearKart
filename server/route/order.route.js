@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import auth from '../middleware/auth.js'
+import { admin } from '../middleware/Admin.js'
 import { CashOnDeliveryOrderController
-    , getOrderDetailsController, paymentController, verifyPaymentController, webhookRazorpay 
+    , getOrderDetailsController, paymentController, verifyPaymentController, webhookRazorpay, getAdminOrdersController 
 } from '../controllers/order.controller.js'
 
 const orderRouter = Router()
@@ -13,5 +14,7 @@ orderRouter.post('/verify-payment',auth,verifyPaymentController)
 // RAZORPAY: Webhook for async payment notifications (optional)
 orderRouter.post('/razorpay-webhook',webhookRazorpay)
 orderRouter.get("/order-list",auth,getOrderDetailsController)
+// Admin: Get all orders with customer details
+orderRouter.get("/admin/all-orders",auth,admin,getAdminOrdersController)
 
 export default orderRouter

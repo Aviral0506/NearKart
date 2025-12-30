@@ -282,9 +282,19 @@ const CheckoutPage = () => {
         description: 'Order Payment',
         order_id: order_id,
         handler: async (response) => {
+          console.log('[Razorpay] ========== PAYMENT HANDLER ==========')
+          console.log('[Razorpay] Payment response received:', response)
+          
           try {
-            console.log('[Razorpay] ========== PAYMENT HANDLER ==========')
-            console.log('[Razorpay] Payment response received:', response)
+            setIsLoading(true)
+            
+            // Prepare items with totalAmt
+            const list_items = cartItemsList.map(item => ({
+              ...item,
+              totalAmt: item.quantity ? item.productId.price * item.quantity : item.productId.price
+            }))
+
+            console.log('[Razorpay] Items prepared:', list_items.length)
             
             // Step 5: Verify payment on backend
             const verifyResponse = await Axios({
@@ -294,14 +304,17 @@ const CheckoutPage = () => {
                 paymentId: response.razorpay_payment_id,
                 signature: response.razorpay_signature,
                 addressId: addressList[selectAddress]?._id,
+                subTotalAmt: totalPrice,
+                totalAmt: totalPrice,
                 // userId will come from auth middleware
-                cartItems: cartItemsList
+                cartItems: list_items
               }
             })
 
-            console.log('[Razorpay] Verify response received:', verifyResponse.data)
+            console.log('[Razorpay] Verify response received:', verifyResponse)
+            console.log('[Razorpay] Verify response data:', verifyResponse.data)
 
-            if (verifyResponse.data && verifyResponse.data.success) {
+            if (verifyResponse?.data?.success) {
               console.log('[Razorpay] ✅ Payment verified successfully')
               toast.success('Payment successful! Order placed.')
               
@@ -317,34 +330,45 @@ const CheckoutPage = () => {
                 // Don't stop navigation even if cart clear fails
               }
               
-              // RAZORPAY: Add small delay to ensure state updates before navigation
-              console.log('[Razorpay] Waiting 500ms before navigation...')
-              setTimeout(() => {
-                console.log('[Razorpay] Executing navigation to /success...')
-                setIsLoading(false)
-                navigate('/success', {
-                  state: {
-                    text: 'Order'
-                  }
-                })
-                console.log('[Razorpay] Navigation executed')
-              }, 500)
-            } else {
+              // RAZORPAY: Navigate to success page
+              console.log('[Razorpay] Navigating to /success...')
               setIsLoading(false)
+              navigate('/success', {
+                state: {
+                  text: 'Order'
+                }
+              })
+            } else {
               console.error('[Razorpay] ❌ Payment verification returned false')
-              console.error('[Razorpay] Response data:', verifyResponse.data)
-              toast.error(verifyResponse.data?.message || 'Payment verification failed')
+              console.error('[Razorpay] Response data:', verifyResponse?.data)
+              setIsLoading(false)
+              toast.error(verifyResponse?.data?.message || 'Payment verification failed')
+              
+              // Navigate to cancel page on verification failure
+              navigate('/cancel', {
+                state: {
+                  text: 'Payment verification failed'
+                }
+              })
             }
           } catch (error) {
-            setIsLoading(false)
             console.error('[Razorpay] ========== VERIFICATION ERROR ==========')
             console.error('[Razorpay] Error type:', error.constructor.name)
             console.error('[Razorpay] Error message:', error.message)
             console.error('[Razorpay] Error status:', error.response?.status)
             console.error('[Razorpay] Error response data:', error.response?.data)
             console.error('[Razorpay] Full error:', error)
+            
+            setIsLoading(false)
             AxiosToastError(error)
             toast.error('Payment verification failed. Please contact support.')
+            
+            // Navigate to cancel page on error
+            navigate('/cancel', {
+              state: {
+                text: 'Payment failed'
+              }
+            })
           }
         },
         prefill: {

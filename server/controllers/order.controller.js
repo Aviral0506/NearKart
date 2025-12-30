@@ -361,3 +361,67 @@ export async function getAdminOrdersController(request, response) {
         })
     }
 }
+
+// Update order status (admin only)
+export async function updateOrderStatusController(request, response) {
+    try {
+        const { orderId, newStatus } = request.body
+
+        if (!orderId || !newStatus) {
+            return response.status(400).json({
+                message: "orderId and newStatus are required",
+                error: true,
+                success: false
+            })
+        }
+
+        // Validate status values
+        const validStatuses = ['CASH ON DELIVERY', 'PAID', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'PENDING']
+        if (!validStatuses.includes(newStatus)) {
+            return response.status(400).json({
+                message: `Invalid status. Allowed values: ${validStatuses.join(', ')}`,
+                error: true,
+                success: false
+            })
+        }
+
+        // Update all orders with this orderId
+        const updatedOrders = await OrderModel.updateMany(
+            { orderId: orderId },
+            { $set: { payment_status: newStatus } },
+            { new: true }
+        )
+
+        if (updatedOrders.modifiedCount === 0) {
+            return response.status(404).json({
+                message: "Order not found",
+                error: true,
+                success: false
+            })
+        }
+
+        // Fetch and return updated orders
+        const orders = await OrderModel.find({ orderId: orderId })
+            .populate({
+                path: 'userId',
+                select: 'name email mobile avatar'
+            })
+            .populate({
+                path: 'delivery_address',
+                select: 'address_line address_line2 city state country pincode mobile address_type'
+            })
+
+        return response.json({
+            message: `Order status updated to ${newStatus}`,
+            data: orders,
+            error: false,
+            success: true
+        })
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        })
+    }
+}

@@ -22,13 +22,26 @@ const UserMenu = ({close}) => {
           })
           console.log("logout",response)
           if(response.data.success){
-            if(close){
-              close()
-            }
             dispatch(logout())
             localStorage.clear()
-            toast.success(response.data.message)
-            navigate("/")
+            
+            // Show toast with higher z-index
+            const toastId = toast.success("Logged out successfully", {
+              duration: 3000,
+              id: 'logout-toast'
+            })
+            
+            // Close modal after a bit
+            setTimeout(() => {
+              if(close){
+                close()
+              }
+            }, 300)
+            
+            // Navigate after toast can be seen
+            setTimeout(() => {
+              navigate("/")
+            }, 2000)
           }
         } catch (error) {
           console.log(error)

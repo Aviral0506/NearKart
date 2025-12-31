@@ -7,6 +7,8 @@ import { useDispatch } from "react-redux";
 import { setUserDetails } from "./store/userSlice";
 import fetchUserDetails from './utils/fetchUserDetails';
 import GlobalProvider from "./provider/GlobalProvider";
+import { Toaster } from "react-hot-toast";
+
 const App = () => {
   const dispatch = useDispatch();
   const fetchUser = async () => {
@@ -21,7 +23,27 @@ const App = () => {
   return (
     // Make the whole page a flex column, min height = screen
     <GlobalProvider>
-
+    <Toaster
+      position="top-right"
+      reverseOrder={false}
+      containerClassName="!z-[9999]"
+      toastOptions={{
+        className: 'font-sans',
+        success: {
+          duration: 3000,
+        },
+        error: {
+          duration: 3000,
+        },
+        style: {
+          background: '#fff',
+          color: '#000',
+          borderRadius: '8px',
+          padding: '16px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        },
+      }}
+    />
     <div className="flex flex-col min-h-screen">
       {/* Header always at top */}
       <Header />

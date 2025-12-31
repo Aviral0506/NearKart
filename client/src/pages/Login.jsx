@@ -3,6 +3,9 @@ import { FaRegEyeSlash, FaRegEye, FaBolt, FaBagShopping, FaTruck } from "react-i
 import toast, { Toaster } from "react-hot-toast";
 import Axios from "../utils/Axios";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setUserDetails } from "../store/userSlice";
+import fetchUserDetails from "../utils/fetchUserDetails";
 
 const Login = () => {
   const [data, setData] = useState({
@@ -13,6 +16,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,6 +40,16 @@ const Login = () => {
 
       if (response.data.success) {
         toast.success(response.data.message);
+        
+        // Fetch user details and update Redux
+        try {
+          const userData = await fetchUserDetails()
+          dispatch(setUserDetails(userData.data))
+          console.log("User details fetched and stored:", userData.data)
+        } catch (fetchError) {
+          console.error("Error fetching user details:", fetchError)
+        }
+        
         // Example: save token if backend returns one
         if (response.data.token) {
           localStorage.setItem("token", response.data.token);

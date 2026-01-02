@@ -143,11 +143,11 @@ export async function loginController(request,response){
             last_login_date : new Date()
         })
 
-        // Only set secure cookies in production (HTTPS)
+        // Set cookies for cross-origin requests (mobile)
         const cookiesOption = {
             httpOnly : true,
-            secure : process.env.NODE_ENV === 'production',
-            sameSite : process.env.NODE_ENV === 'production' ? "None" : "Lax"
+            secure : true,
+            sameSite : "None"
         }
         response.cookie('accessToken',accesstoken,cookiesOption)
         response.cookie('refreshToken',refreshToken,cookiesOption)
@@ -178,8 +178,8 @@ export async function logoutController(request,response){
 
         const cookiesOption = {
             httpOnly : true,
-            secure : process.env.NODE_ENV === 'production',
-            sameSite : process.env.NODE_ENV === 'production' ? "None" : "Lax"
+            secure : true,
+            sameSite : "None"
         }
 
         response.clearCookie("accessToken",cookiesOption)
@@ -465,8 +465,8 @@ export async function refreshToken(request,response){
 
         const cookiesOption = {
             httpOnly : true,
-            secure : process.env.NODE_ENV === 'production',
-            sameSite : process.env.NODE_ENV === 'production' ? "None" : "Lax"
+            secure : true,
+            sameSite : "None"
         }
 
         response.cookie('accessToken',newAccessToken,cookiesOption)

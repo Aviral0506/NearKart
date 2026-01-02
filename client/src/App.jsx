@@ -12,13 +12,33 @@ import { Toaster } from "react-hot-toast";
 const App = () => {
   const dispatch = useDispatch();
   const fetchUser = async () => {
-    const userData = await fetchUserDetails()
-    dispatch(setUserDetails(userData.data));
-    // console.log("Fetched user data:", userData);
+    try {
+      // Check if token exists before fetching
+      const accessToken = localStorage.getItem("accesstoken");
+      
+      if (!accessToken) {
+        console.log("No access token found, skipping user fetch");
+        return;
+      }
+      
+      const userData = await fetchUserDetails();
+      if (userData?.data) {
+        dispatch(setUserDetails(userData.data));
+        console.log("Fetched user data:", userData.data);
+      }
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      // User will remain logged out, which is fine
+    }
   }
     
   useEffect(() => {
-    fetchUser();
+    // Small delay to ensure localStorage is synced (important for mobile)
+    const timer = setTimeout(() => {
+      fetchUser();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
   return (
     // Make the whole page a flex column, min height = screen

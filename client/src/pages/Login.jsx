@@ -44,22 +44,26 @@ const Login = () => {
         // Save tokens from backend response
         if (response.data.data?.accesstoken) {
           localStorage.setItem("accesstoken", response.data.data.accesstoken);
+          console.log("Access token saved to localStorage");
         }
         if (response.data.data?.refreshToken) {
           localStorage.setItem("refreshToken", response.data.data.refreshToken);
+          console.log("Refresh token saved to localStorage");
         }
         
         // Fetch user details and update Redux
         try {
-          const userData = await fetchUserDetails()
-          dispatch(setUserDetails(userData.data))
-          console.log("User details fetched and stored:", userData.data)
+          const userData = await fetchUserDetails();
+          if (userData?.data) {
+            dispatch(setUserDetails(userData.data));
+            console.log("User details fetched and stored:", userData.data);
+          }
         } catch (fetchError) {
-          console.error("Error fetching user details:", fetchError)
+          console.error("Error fetching user details:", fetchError);
         }
         
-        // Redirect after short delay
-        setTimeout(() => navigate("/"), 1000);
+        // Redirect after short delay to let toast show and tokens settle
+        setTimeout(() => navigate("/"), 1500);
       } else {
         toast.error(response.data.message);
       }

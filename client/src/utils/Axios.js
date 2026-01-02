@@ -1,5 +1,6 @@
 import axios from "axios";
 import SummaryApi, { baseURL } from "../common/SummaryApi";
+import { getTokens, saveTokens } from "./tokenStorage";
 
 const Axios = axios.create({
     baseURL: baseURL,
@@ -11,9 +12,19 @@ const Axios = axios.create({
 // -------------------------------------------------------------
 Axios.interceptors.request.use(
     async (config) => {
-        const accessToken = localStorage.getItem("accesstoken");
-        if (accessToken) {
-            config.headers.Authorization = `Bearer ${accessToken}`;
+        try {
+          // Try to get tokens from IndexedDB (persistent on mobile)
+          const tokens = await getTokens();
+          if (tokens?.accesstoken) {
+              config.headers.Authorization = `Bearer ${tokens.accesstoken}`;
+          }
+        } catch (error) {
+          console.warn('Error getting tokens:', error);
+          // Fallback to localStorage
+          const accessToken = localStorage.getItem("accesstoken");
+          if (accessToken) {
+              config.headers.Authorization = `Bearer ${accessToken}`;
+          }
         }
         return config;
     },
@@ -74,7 +85,14 @@ const refreshAccessToken = async (refreshToken) => {
         });
 
         const newToken = response.data.data.accessToken;
-        localStorage.setItem("accesstoken", newToken);
+        
+        // Save new token to IndexedDB and localStorage
+        try {
+          await saveTokens(newToken, refreshToken);
+        } catch (error) {
+          console.warn('Error saving refreshed token:', error);
+          localStorage.setItem("accesstoken", newToken);
+        }
 
         return newToken;
     } catch (error) {

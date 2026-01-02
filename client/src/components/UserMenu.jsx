@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import AxiosToastError from '../utils/AxiosToastError'
 import { HiOutlineExternalLink } from "react-icons/hi";
 import isAdmin from '../utils/isAdmin'
+import { clearTokens } from '../utils/tokenStorage'
 
 const UserMenu = ({close}) => {
    const user = useSelector((state)=> state.user)
@@ -23,7 +24,13 @@ const UserMenu = ({close}) => {
           console.log("logout",response)
           if(response.data.success){
             dispatch(logout())
-            localStorage.clear()
+            // Clear tokens from IndexedDB and localStorage
+            try {
+              await clearTokens();
+            } catch (error) {
+              console.warn('Error clearing tokens:', error);
+              localStorage.clear();
+            }
             
             // Show toast with higher z-index
             const toastId = toast.success("Logged out successfully", {

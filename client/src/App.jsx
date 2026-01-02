@@ -8,6 +8,7 @@ import { setUserDetails } from "./store/userSlice";
 import fetchUserDetails from './utils/fetchUserDetails';
 import GlobalProvider from "./provider/GlobalProvider";
 import { Toaster } from "react-hot-toast";
+import { getTokens } from './utils/tokenStorage';
 
 const App = () => {
   const dispatch = useDispatch();
@@ -15,10 +16,10 @@ const App = () => {
 
   const fetchUser = async () => {
     try {
-      // Check if token exists before fetching
-      const accessToken = localStorage.getItem("accesstoken");
+      // Check if tokens exist - try IndexedDB first (persistent on mobile)
+      const tokens = await getTokens();
       
-      if (!accessToken) {
+      if (!tokens?.accesstoken) {
         console.log("No access token found, skipping user fetch");
         setIsInitializing(false);
         return;

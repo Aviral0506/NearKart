@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setUserDetails } from "../store/userSlice";
 import fetchUserDetails from "../utils/fetchUserDetails";
+import { saveTokens } from "../utils/tokenStorage";
 
 const Login = () => {
   const [data, setData] = useState({
@@ -41,14 +42,14 @@ const Login = () => {
       if (response.data.success) {
         toast.success(response.data.message);
         
-        // Save tokens from backend response
-        if (response.data.data?.accesstoken) {
-          localStorage.setItem("accesstoken", response.data.data.accesstoken);
-          console.log("Access token saved to localStorage");
-        }
-        if (response.data.data?.refreshToken) {
-          localStorage.setItem("refreshToken", response.data.data.refreshToken);
-          console.log("Refresh token saved to localStorage");
+        // Save tokens using IndexedDB (persistent on mobile)
+        if (response.data.data?.accesstoken && response.data.data?.refreshToken) {
+          try {
+            await saveTokens(response.data.data.accesstoken, response.data.data.refreshToken);
+            console.log("Tokens saved to IndexedDB and localStorage");
+          } catch (error) {
+            console.error("Error saving tokens:", error);
+          }
         }
         
         // Fetch user details and update Redux

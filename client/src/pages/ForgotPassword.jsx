@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import Axios from '../utils/Axios';
 import SummaryApi from '../common/SummaryApi';
 import AxiosToastError from '../utils/AxiosToastError';
@@ -59,18 +59,6 @@ const ForgotPassword = () => {
 
     return (
         <section className="w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-            <Toaster 
-                position="top-right" 
-                reverseOrder={false}
-                toastOptions={{
-                className: 'font-sans',
-                style: {
-                    background: '#7c3aed',
-                    color: '#fff',
-                    borderRadius: '8px',
-                },
-                }}
-            />
             
             {/* Subtle decorative elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import CartMobileLink from "./components/CartMobile";
@@ -11,6 +11,8 @@ import { Toaster } from "react-hot-toast";
 
 const App = () => {
   const dispatch = useDispatch();
+  const [isInitializing, setIsInitializing] = useState(true);
+
   const fetchUser = async () => {
     try {
       // Check if token exists before fetching
@@ -18,6 +20,7 @@ const App = () => {
       
       if (!accessToken) {
         console.log("No access token found, skipping user fetch");
+        setIsInitializing(false);
         return;
       }
       
@@ -29,16 +32,14 @@ const App = () => {
     } catch (error) {
       console.error("Error fetching user details:", error);
       // User will remain logged out, which is fine
+    } finally {
+      setIsInitializing(false);
     }
   }
     
   useEffect(() => {
-    // Small delay to ensure localStorage is synced (important for mobile)
-    const timer = setTimeout(() => {
-      fetchUser();
-    }, 100);
-    
-    return () => clearTimeout(timer);
+    // Initialize immediately without delay to prevent premature redirect
+    fetchUser();
   }, []);
   return (
     // Make the whole page a flex column, min height = screen
@@ -65,8 +66,8 @@ const App = () => {
       }}
     />
     <div className="flex flex-col min-h-screen">
-      {/* Header always at top */}
-      <Header />
+      {/* Header always at top - only render after initial user check */}
+      {!isInitializing && <Header />}
 
       {/* Main content grows and pushes footer down */}
       <main className="flex-grow">

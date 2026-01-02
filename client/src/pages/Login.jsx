@@ -41,6 +41,14 @@ const Login = () => {
       if (response.data.success) {
         toast.success(response.data.message);
         
+        // Save tokens from backend response
+        if (response.data.data?.accesstoken) {
+          localStorage.setItem("accesstoken", response.data.data.accesstoken);
+        }
+        if (response.data.data?.refreshToken) {
+          localStorage.setItem("refreshToken", response.data.data.refreshToken);
+        }
+        
         // Fetch user details and update Redux
         try {
           const userData = await fetchUserDetails()
@@ -50,10 +58,6 @@ const Login = () => {
           console.error("Error fetching user details:", fetchError)
         }
         
-        // Example: save token if backend returns one
-        if (response.data.token) {
-          localStorage.setItem("token", response.data.token);
-        }
         // Redirect after short delay
         setTimeout(() => navigate("/"), 1000);
       } else {

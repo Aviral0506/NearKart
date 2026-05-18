@@ -1,0 +1,49 @@
+services:
+  # 1. MongoDB Database Service
+  mongodb:
+    image: mongo:latest
+    container_name: nearkart-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  # 2. Node.js Backend Service
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: nearkart-backend
+    ports:
+      - "5000:5000"
+    environment:
+      # Override the MongoDB URI to connect to the local container for Phase 1 testing
+      # If you prefer to use your existing Atlas URI, you can comment this line out
+      - MONGODB_URI=mongodb+srv://aviralchaurasia175_db_user:wPQ9IrFF3ObYMLqD@nearkart.pgc5c3y.mongodb.net/test
+      - FRONTEND_URL=http://localhost:5173
+      - PORT=5000
+    env_file:
+      - ./server/.env # Load other secrets from server/.env
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+  # 3. React Frontend Service
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        # Pass the backend URL so Vite can build with it
+        - VITE_API_URL=http://localhost:5000
+    container_name: nearkart-frontend
+    ports:
+      # Map container port 80 (nginx) to host port 5173 to avoid CORS issues
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:

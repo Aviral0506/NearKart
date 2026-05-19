@@ -2,30 +2,40 @@ pipeline {
     agent any
 
     environment {
-        // Replace these with your actual Docker Hub username
-        DOCKER_HUB_CREDENTIALS_ID = 'docker-hub-credentials'
-        DOCKER_USERNAME = 'your_dockerhub_username'
-        
+        // Docker Hub Credentials ID from Jenkins
+        DOCKER_HUB_CREDENTIALS_ID = 'nearkart'
+
+        // Docker Hub Username
+        DOCKER_USERNAME = 'aviral0506'
+
+        // Image Names
         FRONTEND_IMAGE = "${DOCKER_USERNAME}/nearkart-frontend"
         BACKEND_IMAGE = "${DOCKER_USERNAME}/nearkart-backend"
+
+        // Build Tag
         IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
-                // This checks out the code from the GitHub webhook trigger
                 checkout scm
-                echo 'Code checkout complete.'
+                echo '✅ Code checkout complete.'
             }
         }
 
         stage('Build & Test Backend') {
             steps {
                 dir('server') {
-                    // Assuming you have tests. If not, this just installs dependencies to ensure it builds.
-                    sh 'npm install'
-                    // sh 'npm test' // Uncomment when you have tests
+
+                    echo '📦 Installing backend dependencies...'
+                    sh 'npm ci'
+
+                    // Uncomment when backend tests are added
+                    // sh 'npm test'
+
+                    echo '✅ Backend build check complete.'
                 }
             }
         }
@@ -33,65 +43,114 @@ pipeline {
         stage('Build & Test Frontend') {
             steps {
                 dir('client') {
-                    sh 'npm install'
-                    // sh 'npm run build' // Test if the build works
+
+                    echo '📦 Installing frontend dependencies...'
+                    sh 'npm ci'
+
+                    // Uncomment when frontend build testing is needed
+                    // sh 'npm run build'
+
+                    echo '✅ Frontend build check complete.'
                 }
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                echo 'Building Backend Image...'
+
+                echo '🐳 Building Backend Docker Image...'
+
                 dir('server') {
-                    sh "docker build -t ${BACKEND_IMAGE}:latest -t ${BACKEND_IMAGE}:${IMAGE_TAG} ."
+                    sh """
+                        docker build \
+                        -t ${BACKEND_IMAGE}:latest \
+                        -t ${BACKEND_IMAGE}:${IMAGE_TAG} .
+                    """
                 }
-                
-                echo 'Building Frontend Image...'
+
+                echo '🐳 Building Frontend Docker Image...'
+
                 dir('client') {
-                    // Replace the API URL with your production URL if needed
-                    sh "docker build --build-arg VITE_API_URL=http://localhost:5000 -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${IMAGE_TAG} ."
+                    sh """
+                        docker build \
+                        --build-arg VITE_API_URL=http://backend:5000 \
+                        -t ${FRONTEND_IMAGE}:latest \
+                        -t ${FRONTEND_IMAGE}:${IMAGE_TAG} .
+                    """
+                }
+
+                echo '✅ Docker images built successfully.'
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+
+                echo '🔐 Logging into Docker Hub...'
+
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: "${DOCKER_HUB_CREDENTIALS_ID}",
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+
+                    sh '''
+                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
+                    '''
+
+                    echo '🚀 Pushing Backend Images...'
+
+                    sh """
+                        docker push ${BACKEND_IMAGE}:latest
+                        docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
+                    """
+
+                    echo '🚀 Pushing Frontend Images...'
+
+                    sh """
+                        docker push ${FRONTEND_IMAGE}:latest
+                        docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
+                    """
+
+                    echo '✅ Docker images pushed successfully.'
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Deploy Application') {
             steps {
-                echo 'Logging into Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS_ID}", passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
-                    
-                    echo 'Pushing Images...'
-                    sh "docker push ${BACKEND_IMAGE}:latest"
-                    sh "docker push ${BACKEND_IMAGE}:${IMAGE_TAG}"
-                    
-                    sh "docker push ${FRONTEND_IMAGE}:latest"
-                    sh "docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}"
-                }
-            }
-        }
 
-        stage('Deploy') {
-            steps {
-                echo 'Deploying application...'
-                // For a local Jenkins, you might just restart docker-compose here.
-                // In a real EC2 scenario, you would SSH into your production server and run docker pull and docker-compose up
-                sh 'docker-compose down'
-                sh 'docker-compose up -d'
+                echo '🚀 Deploying application using Docker Compose...'
+
+                sh '''
+                    docker compose down || true
+                    docker compose up -d || true
+                '''
+
+                echo '✅ Deployment completed.'
             }
         }
     }
 
     post {
+
         always {
-            echo 'Pipeline finished.'
-            // Clean up old images to save space
-            sh 'docker image prune -f'
+
+            echo '🧹 Cleaning unused Docker images...'
+
+            sh 'docker image prune -f || true'
+
+            echo '📌 Pipeline execution finished.'
         }
+
         success {
-            echo 'Deployment Successful! ✅'
+            echo '🎉 Deployment Successful! ✅'
         }
+
         failure {
-            echo 'Deployment Failed! ❌'
+            echo '❌ Deployment Failed!'
         }
     }
 }

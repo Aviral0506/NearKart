@@ -45,5 +45,20 @@ services:
       - backend
     restart: unless-stopped
 
+  # 4. Jenkins CI/CD Service
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: nearkart-jenkins
+    user: root # Required to access docker.sock for building images
+    ports:
+      # Map to 8082 to avoid conflicts with native Jenkins or other apps on 8080
+      - "8082:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock # Allows Jenkins to run Docker commands
+    restart: unless-stopped
+
 volumes:
   mongodb_data:
+  jenkins_home:

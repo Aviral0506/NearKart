@@ -5,6 +5,7 @@ import cors from "cors"
 import helmet from "helmet"
 import cookieParser from "cookie-parser"
 import morgan from "morgan"
+import client from "prom-client"
 import connectDB from "./config/connectDB.js"
 import userRouter from "./route/user.route.js"
 import categoryRouter from "./route/category.route.js"  
@@ -15,6 +16,30 @@ import cartRouter from "./route/cart.route.js"
 import addressRouter from "./route/address.route.js"
 import orderRouter from "./route/order.route.js"
 const app = express()
+
+// Prometheus metrics setup
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics({ register: client.register });
+
+const httpRequestCounter = new client.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    // Track API requests to calculate rate and error rate
+    if (req.path.startsWith('/api') || req.path === '/') {
+      httpRequestCounter.inc({
+        method: req.method,
+        route: req.route ? req.route.path : req.path,
+        status_code: res.statusCode
+      });
+    }
+  });
+  next();
+});
 
 // Middleware
 app.use(cors({
@@ -36,6 +61,11 @@ app.use(helmet({
 const PORT = process.env.PORT || 5000
 
 // Routes
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
+});
+
 app.get("/", (req, res) => {
   res.json({ message: "Server is running" })
 })

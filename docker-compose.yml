@@ -21,6 +21,7 @@ services:
       # Override the MongoDB URI to connect to the local container for Phase 1 testing
       # If you prefer to use your existing Atlas URI, you can comment this line out
       - MONGODB_URI=mongodb+srv://aviralchaurasia175_db_user:wPQ9IrFF3ObYMLqD@nearkart.pgc5c3y.mongodb.net/test
+      # - MONGODB_URI=mongodb://mongodb:27017/nearkart
       - FRONTEND_URL=http://localhost:5173
       - PORT=5000
     env_file:

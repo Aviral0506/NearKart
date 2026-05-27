@@ -73,7 +73,7 @@ pipeline {
                 dir('client') {
                     sh """
                         docker build \
-                        --build-arg VITE_API_URL=http://backend:5000 \
+                        --build-arg VITE_API_URL=http://localhost/api \
                         -t ${FRONTEND_IMAGE}:latest \
                         -t ${FRONTEND_IMAGE}:${IMAGE_TAG} .
                     """
@@ -119,15 +119,16 @@ pipeline {
             }
         }
 
-        stage('Deploy Application') {
+        stage('Deploy Application (Kubernetes)') {
             steps {
 
-                echo '🚀 Deploying application using Docker Compose...'
+                echo '🚀 Deploying application to Kubernetes...'
 
-                sh '''
-                    docker-compose down || true
-                    docker-compose up -d || true
-                '''
+                // 1. Apply the manifest files
+                sh 'kubectl apply -f k8s/'
+
+                // 2. Force K8s to pull the newly built images from Docker Hub
+                sh 'kubectl rollout restart deployment backend frontend'
 
                 echo '✅ Deployment completed.'
             }

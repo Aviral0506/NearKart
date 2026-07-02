@@ -10,7 +10,6 @@
   <img src="https://img.shields.io/badge/CI%2FCD-Jenkins-D24939" />
   <img src="https://img.shields.io/badge/IaC-Terraform-7B42BC" />
   <img src="https://img.shields.io/badge/Monitoring-Prometheus%20%2B%20Grafana-E6522C" />
-  <img src="https://img.shields.io/badge/License-MIT-lightgrey" />
 </p>
 
 

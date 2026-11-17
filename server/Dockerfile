@@ -1,4 +1,4 @@
-# Use Node.js 18 alpine image for a smaller footprint
+# Use Node.js 18 alpine image
 FROM node:18-alpine
 
 WORKDIR /app

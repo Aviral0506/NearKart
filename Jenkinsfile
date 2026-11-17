@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     environment {
         // Docker Hub Credentials ID from Jenkins
         DOCKER_HUB_CREDENTIALS_ID = 'nearkart'
@@ -15,7 +14,6 @@ pipeline {
         // Build Tag
         IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
-
     stages {
 
         stage('Checkout Code') {

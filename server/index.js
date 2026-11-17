@@ -46,7 +46,8 @@ app.use(cors({
   origin: [
     "https://nearkart.app",
     "https://www.nearkart.app",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://13.126.146.2:5173"
   ],
   credentials: true
 }))

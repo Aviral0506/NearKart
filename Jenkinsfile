@@ -117,18 +117,16 @@ pipeline {
             }
         }
 
-        stage('Deploy Application (Kubernetes)') {
+        stage('Deploy Application (Docker Compose)') {
             steps {
+                echo '🚀 Deploying NearKart using Docker Compose...'
 
-                echo '🚀 Deploying application to Kubernetes...'
+                sh '''
+                    docker compose down
+                    docker compose up -d
+                '''
 
-                // 1. Apply the manifest files
-                sh 'kubectl apply -f k8s/'
-
-                // 2. Force K8s to pull the newly built images from Docker Hub
-                sh 'kubectl rollout restart deployment backend frontend'
-
-                echo '✅ Deployment completed.'
+                echo '✅ Application deployed successfully.'
             }
         }
     }

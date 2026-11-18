@@ -1,11 +1,11 @@
-# Use Node.js 18 alpine image
-FROM node:18-alpine
+# Use Node.js 20 alpine image
+FROM node:20-alpine
 
 WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci --omit=dev
 
 # Copy the rest of the application code
 COPY . .

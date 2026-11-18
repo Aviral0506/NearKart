@@ -25,13 +25,9 @@ pipeline {
         stage('Build & Test Backend') {
             steps {
                 dir('server') {
-
                     echo '📦 Installing backend dependencies...'
                     sh 'npm ci'
-
-                    // Uncomment when backend tests are added
-                    // sh 'npm test'
-
+                    sh 'node --check index.js'
                     echo '✅ Backend build check complete.'
                 }
             }
@@ -40,13 +36,9 @@ pipeline {
         stage('Build & Test Frontend') {
             steps {
                 dir('client') {
-
                     echo '📦 Installing frontend dependencies...'
                     sh 'npm ci'
-
-                    // Uncomment when frontend build testing is needed
-                    // sh 'npm run build'
-
+                    sh 'npm run build'
                     echo '✅ Frontend build check complete.'
                 }
             }
@@ -119,12 +111,10 @@ pipeline {
         stage('Deploy Application (Docker Compose)') {
             steps {
                 echo '🚀 Deploying NearKart using Docker Compose...'
-
                 sh '''
-                    docker compose down
-                    docker compose up -d
+                    docker rm -f nearkart-mongodb nearkart-backend nearkart-frontend || true
+                    docker compose up -d --build mongodb backend frontend
                 '''
-
                 echo '✅ Application deployed successfully.'
             }
         }
